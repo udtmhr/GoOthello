@@ -1,16 +1,9 @@
 package main
 
-import (
-	"fmt"
-	"time"
-)
-
 const (
-	SIZE  = 8
-	WHITE = -1
-	BLACK = 1
-	IBB   = 0x0000000810000000
-	IWB   = 0x0000001008000000
+	SIZE = 8
+	IBB  = 0x0000000810000000
+	IWB  = 0x0000001008000000
 )
 
 type Board struct {
@@ -30,7 +23,7 @@ func (b *Board) checkRLine(mask, n uint) uint {
 	for i := 0; i < 5; i++ {
 		res |= mask & (res >> n)
 	}
-	return res
+	return res >> n
 }
 
 func (b *Board) checkLLine(mask, n uint) uint {
@@ -38,7 +31,8 @@ func (b *Board) checkLLine(mask, n uint) uint {
 	for i := 0; i < 5; i++ {
 		res |= mask & (res << n)
 	}
-	return res
+
+	return res << n
 }
 
 func (b *Board) LegalBoard() uint {
@@ -60,7 +54,7 @@ func (b *Board) LegalBoard() uint {
 
 func transfer(pos uint, k int) uint {
 	switch k {
-	case 0: // 上
+	case 0: //上
 		return (pos << 8) & 0xffffffffffffff00
 	case 1: //右上
 		return (pos << 7) & 0x7f7f7f7f7f7f7f00
@@ -81,28 +75,23 @@ func transfer(pos uint, k int) uint {
 	}
 }
 
-func (b *Board) reverse(pos uint) uint {
+func (b *Board) Reverse(pos uint) uint {
 	var rev uint
 	for i := 0; i < 8; i++ {
 		var rev_ uint
 		mask := transfer(pos, i)
 		for mask != 0 && mask&b.ob != 0 {
 			rev_ |= mask
-			mask = transfer(rev_, i)
+			mask = transfer(mask, i)
 		}
-		if mask&b.ob != 0 {
+		if mask&b.pb != 0 {
 			rev |= rev_
 		}
 	}
 	return rev
 }
 
-func main() {
-	board := NewBoard()
-	start := time.Now()
-	for i := 0; i < 1000; i++ {
-		board.reverse(0x0000002000000000)
-	}
-	end := time.Now()
-	fmt.Printf("%f\n", end.Sub(start).Seconds())
+func (b *Board) Put(pos, rev uint) {
+	b.pb ^= rev | pos
+	b.ob ^= rev
 }
